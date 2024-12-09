@@ -1,4 +1,5 @@
 package main
+
 import (
 	"bufio"
 	"fmt"
@@ -7,7 +8,7 @@ import (
 	"strings"
 )
 
-// helper to check if report is safe
+// Helper to check if a report is safe
 func isSafe(report []int) bool {
 	if len(report) < 2 {
 		// A report with fewer than 2 levels is trivially safe
@@ -42,44 +43,72 @@ func isSafe(report []int) bool {
 	return true
 }
 
+// Function to check if a report can be made safe by removing a single level
+// wrapper around pt1 isSafe
+func isSafeWithDampener(report []int) bool {
+	// Check if the report is already safe
+	if isSafe(report) {
+		return true
+	}
+
+	// Try removing each level and check if the report becomes safe
+	for i := 0; i < len(report); i++ {
+		// Create a new slice with the i-th level removed
+		// Go slice syntax [start, end), simialr to python w/o step
+		// ... variadic operator similar to spread in js
+		modifiedReport := make([]int, 0, len(report)-1) 
+		modifiedReport = append(modifiedReport, report[:i]...) // spread start to i-1
+		modifiedReport = append(modifiedReport, report[i+1:]...) // spread i+1 to n
+
+		// Check if the modified report is safe
+		if isSafe(modifiedReport) {
+			return true
+		}
+	}
+
+	return false // Not safe even with the dampener
+}
+
+
 func main() {
 	file, ferr := os.Open("input.txt")
-	
 	if ferr != nil {
 		panic(ferr)
 	}
 	defer file.Close()
+
 	scanner := bufio.NewScanner(file)
 	safeCount := 0
-	lineNum := 0
+	reportIndex := 1
 
-	// read line by line
+	// Read line by line
 	for scanner.Scan() {
-		lineNum += 1
 		line := scanner.Text()
 
-		// Split the line into a string of individual numbers
+		// Split the line into individual numbers
 		parts := strings.Fields(line)
-		// create int slice of 0s of same length
+		// make creates a a slice of ints of a certain length
 		report := make([]int, len(parts))
 		for i, part := range parts {
 			num, err := strconv.Atoi(part)
 			if err != nil {
-				// %q: quoted output, %v: default
+				// %q: quoted, %v: default
 				fmt.Printf("Error converting %q to integer: %v\n", part, err)
 				return
 			}
 			report[i] = num
 		}
-		fmt.Println(lineNum, report)
 
-		// Check if the report is safe
-		if isSafe(report) {
-			fmt.Printf("report #%v is safe", lineNum)
-			fmt.Println()
+		// Check if the report is safe with the dampener
+		if isSafeWithDampener(report) {
+			fmt.Printf("Report #%d is SAFE: %v\n", reportIndex, report)
 			safeCount++
+		} else {
+			fmt.Printf("Report #%d is UNSAFE: %v\n", reportIndex, report)
 		}
+
+		reportIndex++
 	}
-	fmt.Println("")
-	fmt.Println("# of safe reports is ", safeCount)
+
+	fmt.Printf("Total number of safe reports: %d\n", safeCount)
 }
